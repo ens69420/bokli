@@ -10,7 +10,85 @@ Main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
+Main.Visible = false
 Main.Parent = ScreenGui
+
+local KeySystem = Instance.new("Frame")
+KeySystem.Name = "KeySystem"
+KeySystem.Size = UDim2.new(0, 300, 0, 200)
+KeySystem.Position = UDim2.new(0.5, -150, 0.5, -100)
+KeySystem.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+KeySystem.BorderSizePixel = 0
+KeySystem.Active = true
+KeySystem.Draggable = true
+KeySystem.Parent = ScreenGui
+
+local KeyCorner = Instance.new("UICorner")
+KeyCorner.CornerRadius = UDim.new(0, 8)
+KeyCorner.Parent = KeySystem
+
+local KeyTitle = Instance.new("TextLabel")
+KeyTitle.Name = "Title"
+KeyTitle.Size = UDim2.new(1, 0, 0, 40)
+KeyTitle.BackgroundTransparency = 1
+KeyTitle.Text = "MM2 ULTRA V19 - KEY SYSTEM"
+KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyTitle.Font = Enum.Font.GothamBold
+KeyTitle.TextSize = 14
+KeyTitle.Parent = KeySystem
+
+local KeyInput = Instance.new("TextBox")
+KeyInput.Name = "KeyInput"
+KeyInput.Size = UDim2.new(0.8, 0, 0, 35)
+KeyInput.Position = UDim2.new(0.1, 0, 0.3, 0)
+KeyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+KeyInput.Text = ""
+KeyInput.PlaceholderText = "Enter Key Here..."
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Font = Enum.Font.Gotham
+KeyInput.TextSize = 12
+KeyInput.Parent = KeySystem
+
+local KeyInputCorner = Instance.new("UICorner")
+KeyInputCorner.CornerRadius = UDim.new(0, 4)
+KeyInputCorner.Parent = KeyInput
+
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Name = "VerifyBtn"
+VerifyBtn.Size = UDim2.new(0.8, 0, 0, 35)
+VerifyBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+VerifyBtn.Text = "Verify"
+VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 12
+VerifyBtn.Parent = KeySystem
+
+local VerifyCorner = Instance.new("UICorner")
+VerifyCorner.CornerRadius = UDim.new(0, 4)
+VerifyCorner.Parent = VerifyBtn
+
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Name = "GetKeyBtn"
+GetKeyBtn.Size = UDim2.new(0.8, 0, 0, 30)
+GetKeyBtn.Position = UDim2.new(0.1, 0, 0.8, 0)
+GetKeyBtn.BackgroundTransparency = 1
+GetKeyBtn.Text = "Get Key"
+GetKeyBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+GetKeyBtn.Font = Enum.Font.Gotham
+GetKeyBtn.TextSize = 11
+GetKeyBtn.Parent = KeySystem
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    if KeyInput.Text == "ensomg" then
+        KeySystem:Destroy()
+        Main.Visible = true
+    else
+        VerifyBtn.Text = "WRONG KEY!"
+        task.wait(2)
+        VerifyBtn.Text = "Verify"
+    end
+end)
 
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 8)

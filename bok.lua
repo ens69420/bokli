@@ -1,8 +1,11 @@
 -- =============================================================================
---  MM2 ULTRA HACK V19 - FINAL EDITION
+--  MM2 ULTRA HACK V19 - ROBUST EDITION
 --  Key: ensomg
 --  [LEFT CTRL]: Toggle Menu
 -- =============================================================================
+
+print("---------------------------------------")
+print("MM2 ULTRA V19 LOADING...")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,21 +15,30 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
+-- UI Parent Check (Robustness)
+local UIParent
+local success, err = pcall(function() UIParent = game:GetService("CoreGui") end)
+if not success or not UIParent then
+    UIParent = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    print("CoreGui failed, using PlayerGui")
+end
+
 -- Cleanup existing
-local oldGui = game:GetService("CoreGui"):FindFirstChild("MM2_Ultra_V19")
+local oldGui = UIParent:FindFirstChild("MM2_Ultra_V19")
 if oldGui then oldGui:Destroy() end
 
 if shared.ESP_Storage then
-    for _, connection in pairs(shared.ESP_Storage.Connections) do connection:Disconnect() end
-    for _, drawing in pairs(shared.ESP_Storage.Drawings) do pcall(function() drawing:Remove() end) end
+    for _, connection in pairs(shared.ESP_Storage.Connections or {}) do pcall(function() connection:Disconnect() end) end
+    for _, drawing in pairs(shared.ESP_Storage.Drawings or {}) do pcall(function() drawing:Remove() end) end
 end
 shared.ESP_Storage = { Connections = {}, Drawings = {} }
 
 -- --- UI CONSTRUCTION ---
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MM2_Ultra_V19"
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.Enabled = true
+ScreenGui.Parent = UIParent
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
 
 -- --- KEY SYSTEM ---
 local KeyFrame = Instance.new("Frame")
@@ -37,11 +49,10 @@ KeyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 KeyFrame.BorderSizePixel = 0
 KeyFrame.Active = true
 KeyFrame.Draggable = true
+KeyFrame.ZIndex = 10
 KeyFrame.Parent = ScreenGui
 
-local KeyCorner = Instance.new("UICorner")
-KeyCorner.CornerRadius = UDim.new(0, 8)
-KeyCorner.Parent = KeyFrame
+Instance.new("UICorner", KeyFrame).CornerRadius = UDim.new(0, 8)
 
 local KeyTitle = Instance.new("TextLabel")
 KeyTitle.Size = UDim2.new(1, 0, 0, 40)
@@ -85,6 +96,7 @@ Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
 Main.Visible = false
+Main.ZIndex = 5
 Main.Parent = ScreenGui
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 
@@ -203,7 +215,7 @@ local function CreateButton(tabName, name, callback)
     return Btn
 end
 
--- Create Tabs
+-- Create Tabs (INITIALIZE)
 CreateTab("MM2")
 CreateTab("Combat")
 CreateTab("Fling")
@@ -212,6 +224,8 @@ CreateTab("Movement")
 CreateTab("Visuals")
 CreateTab("Natural Disaster")
 CreateTab("Global")
+
+print("Tabs Initialized")
 
 -- --- FEATURES LOGIC ---
 
@@ -291,42 +305,45 @@ end)
 
 -- List Updates (Fling & Teleport)
 local function UpdateLists()
-    for _, tabName in pairs({"Fling", "Teleport"}) do
-        local page = Tabs[tabName]
-        for _, c in pairs(page:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then
-                local f = Instance.new("Frame") f.Size = UDim2.new(1, -10, 0, 40) f.BackgroundColor3 = Color3.fromRGB(30, 30, 30) f.Parent = page
-                Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
-                local l = Instance.new("TextLabel") l.Size = UDim2.new(0.6, 0, 1, 0) l.Position = UDim2.new(0, 10, 0, 0) l.BackgroundTransparency = 1 l.Text = p.Name l.TextColor3 = Color3.new(1,1,1) l.TextXAlignment = Enum.TextXAlignment.Left l.Parent = f
-                local b = Instance.new("TextButton") b.Size = UDim2.new(0.35, 0, 0.8, 0) b.Position = UDim2.new(0.6, 0, 0.1, 0) b.BackgroundColor3 = Color3.fromRGB(45, 45, 45) b.Text = tabName == "Fling" and "Fling" or "TP" b.TextColor3 = Color3.new(1,1,1) b.Parent = f
-                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-                
-                b.MouseButton1Click:Connect(function()
-                    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        if tabName == "Teleport" then
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
-                        else
-                            local old = LocalPlayer.Character.HumanoidRootPart.CFrame
-                            local t = p.Character.HumanoidRootPart
-                            local start = tick()
-                            while tick() - start < 3 do
-                                if not p.Parent or not p.Character then break end
-                                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
-                                LocalPlayer.Character.HumanoidRootPart.CFrame = t.CFrame
-                                LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                                LocalPlayer.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 999999, 0)
-                                RunService.Heartbeat:Wait()
+    pcall(function()
+        for _, tabName in pairs({"Fling", "Teleport"}) do
+            local page = Tabs[tabName]
+            if not page then continue end
+            for _, c in pairs(page:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then
+                    local f = Instance.new("Frame") f.Size = UDim2.new(1, -10, 0, 40) f.BackgroundColor3 = Color3.fromRGB(30, 30, 30) f.Parent = page
+                    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 4)
+                    local l = Instance.new("TextLabel") l.Size = UDim2.new(0.6, 0, 1, 0) l.Position = UDim2.new(0, 10, 0, 0) l.BackgroundTransparency = 1 l.Text = p.Name l.TextColor3 = Color3.new(1,1,1) l.TextXAlignment = Enum.TextXAlignment.Left l.Parent = f
+                    local b = Instance.new("TextButton") b.Size = UDim2.new(0.35, 0, 0.8, 0) b.Position = UDim2.new(0.6, 0, 0.1, 0) b.BackgroundColor3 = Color3.fromRGB(45, 45, 45) b.Text = tabName == "Fling" and "Fling" or "TP" b.TextColor3 = Color3.new(1,1,1) b.Parent = f
+                    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+                    
+                    b.MouseButton1Click:Connect(function()
+                        if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            if tabName == "Teleport" then
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
+                            else
+                                local old = LocalPlayer.Character.HumanoidRootPart.CFrame
+                                local t = p.Character.HumanoidRootPart
+                                local start = tick()
+                                while tick() - start < 3 do
+                                    if not p.Parent or not p.Character then break end
+                                    for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = t.CFrame
+                                    LocalPlayer.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                                    LocalPlayer.Character.HumanoidRootPart.RotVelocity = Vector3.new(0, 999999, 0)
+                                    RunService.Heartbeat:Wait()
+                                end
+                                LocalPlayer.Character.HumanoidRootPart.CFrame = old
+                                LocalPlayer.Character.HumanoidRootPart.RotVelocity = Vector3.new(0,0,0)
+                                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
                             end
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = old
-                            LocalPlayer.Character.HumanoidRootPart.RotVelocity = Vector3.new(0,0,0)
-                            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end
                         end
-                    end
-                end)
+                    end)
+                end
             end
         end
-    end
+    end)
 end
 Players.PlayerAdded:Connect(UpdateLists) Players.PlayerRemoving:Connect(UpdateLists) UpdateLists()
 
@@ -354,7 +371,7 @@ CreateToggle("Movement", "Fly Mode", "Fly", function(state)
                 bv.Velocity = dir * 50 bg.CFrame = Camera.CFrame
                 RunService.RenderStepped:Wait()
             end
-            bv:Destroy() bg:Destroy() LocalPlayer.Character.Humanoid.PlatformStand = false
+            if bv then bv:Destroy() end if bg then bg:Destroy() end if LocalPlayer.Character then LocalPlayer.Character.Humanoid.PlatformStand = false end
         end)
     end
 end)
@@ -410,8 +427,10 @@ local ringRadius = 50
 local ringParts = {}
 local function RetainPart(part)
     if part:IsA("BasePart") and not part.Anchored and part:IsDescendantOf(workspace) and not part:IsDescendantOf(LocalPlayer.Character) then
-        part.CustomPhysicalProperties = PhysicalProperties.new(0,0,0,0,0)
-        part.CanCollide = false
+        pcall(function()
+            part.CustomPhysicalProperties = PhysicalProperties.new(0,0,0,0,0)
+            part.CanCollide = false
+        end)
         return true
     end
     return false
@@ -425,7 +444,7 @@ CreateButton("Natural Disaster", "Radius -10", function() ringRadius = math.max(
 
 RunService.Heartbeat:Connect(function()
     if Toggles.Tornado and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
+        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
         local center = LocalPlayer.Character.HumanoidRootPart.Position
         for i, part in pairs(ringParts) do
             if part.Parent and not part.Anchored then
@@ -442,26 +461,29 @@ end)
 
 -- Global
 CreateButton("Global", "Load Infinite Yield", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))() end)
-CreateToggle("Global", "Anti-AFK", "AntiAFK", function(state) if state then LocalPlayer.Idled:Connect(function() if Toggles.AntiAFK then game:GetService("VirtualUser"):CaptureController() game:GetService("VirtualUser"):ClickButton2(Vector2.new()) end end) end end)
+CreateToggle("Global", "Anti-AFK", "AntiAFK", function(state) if state then LocalPlayer.Idled:Connect(function() if Toggles.AntiAFK then pcall(function() game:GetService("VirtualUser"):CaptureController() game:GetService("VirtualUser"):ClickButton2(Vector2.new()) end) end end) end end)
 CreateToggle("Global", "Chat Spammer", "ChatSpammer", function(state)
     task.spawn(function()
         while Toggles.ChatSpammer do
-            game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("MM2 ULTRA V19 ON TOP!", "All")
+            pcall(function() game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer("MM2 ULTRA V19 ON TOP!", "All") end)
             task.wait(3)
         end
     end)
 end)
 CreateButton("Global", "Server Hop", function()
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
-    for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing < s.maxPlayers then TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id) break end end
+    pcall(function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")).data
+        for _, s in pairs(servers) do if s.id ~= game.JobId and s.playing < s.maxPlayers then TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id) break end end
+    end)
 end)
-CreateButton("Global", "Rejoin", function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId) end)
+CreateButton("Global", "Rejoin", function() pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId) end) end)
 
 -- Key Logic
 VerifyBtn.MouseButton1Click:Connect(function()
     if KeyInput.Text == "ensomg" then
         KeyFrame:Destroy()
         Main.Visible = true
+        print("KEY CORRECT - ACCESS GRANTED")
     else
         VerifyBtn.Text = "WRONG KEY!"
         task.wait(2)
@@ -477,6 +499,11 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 -- Default Tab
-TabButtons["MM2"].BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-TabButtons["MM2"].TextColor3 = Color3.fromRGB(255, 255, 255)
-Tabs["MM2"].Visible = true
+if TabButtons["MM2"] then
+    TabButtons["MM2"].BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    TabButtons["MM2"].TextColor3 = Color3.fromRGB(255, 255, 255)
+    Tabs["MM2"].Visible = true
+end
+
+print("MM2 ULTRA V19 LOADED SUCCESSFULLY")
+print("---------------------------------------")
